@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'package:quiz_app1/screens/home_page.dart';
 
 class BottomNavBar extends StatelessWidget {
   const BottomNavBar({super.key});
@@ -27,7 +27,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
-    Center(child: Text("HomePage")),
+    HomePage(),
     Center(child: Text("Statystyki")),
     Center(child: Text("Profil")),
     Center(child: Text("Wersja premium")),
