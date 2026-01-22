@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app1/base/widgets/fiszki.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -24,25 +25,36 @@ class HomePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // ===== FISZKI BUTTON =====
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Center(
-                  child: Text(
-                    '+ FISZKI',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
+              InkWell(
+  borderRadius: BorderRadius.circular(20),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FlashcardApp(),
+      ),
+    );
+  },
+  child: Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(vertical: 18),
+    decoration: BoxDecoration(
+      color: Colors.deepPurple,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: const Center(
+      child: Text(
+        '+ FISZKI',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  ),
+),
+
 
               const SizedBox(height: 32),
 
