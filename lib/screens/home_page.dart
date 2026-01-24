@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quiz_app1/base/widgets/fiszki_card.dart';
-import 'package:quiz_app1/base/widgets/course_card.dart';
+import 'package:quiz_app1/base/pages/fiszki_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -32,8 +31,6 @@ class HomePage extends StatelessWidget {
                       SizedBox(height: 4),
                       Text(
                         'Ready to learn?',
-
-
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -45,13 +42,13 @@ class HomePage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C28),
+                      color: Color(0xFF1C1C28),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black54,
                           blurRadius: 10,
-                          offset: const Offset(0, 6),
+                          offset: Offset(0, 6),
                         ),
                       ],
                     ),
@@ -67,13 +64,13 @@ class HomePage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1C1C28),
+                  color: Color(0xFF1C1C28),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black54,
                       blurRadius: 12,
-                      offset: const Offset(0, 6),
+                      offset: Offset(0, 6),
                     ),
                   ],
                 ),
@@ -89,57 +86,44 @@ class HomePage extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-              // ===== FISZKI CARD =====
-              const FiszkiCard(),
-
-              const SizedBox(height: 30),
-
-              // ===== CATEGORIES =====
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    'Categories',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              // ===== PRZYCISK FISZKI =====
+              InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FiszkiPage(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepPurple.withOpacity(0.4),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'FISZKI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  Text(
-                    'See all',
-                    style: TextStyle(color: Colors.deepPurpleAccent),
-                  )
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              Row(
-                children: const [
-                  Expanded(
-                    child: CategoryCard(
-                      title: 'Biology',
-                      icon: Icons.biotech,
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: CategoryCard(
-                      title: 'Chemistry',
-                      icon: Icons.science,
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: CategoryCard(
-                      title: 'Math',
-                      icon: Icons.calculate,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),

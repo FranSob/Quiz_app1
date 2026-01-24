@@ -1,4 +1,3 @@
-// lib/base/models/fiszka.dart
 class Fiszka {
   String question;
   String answer;
