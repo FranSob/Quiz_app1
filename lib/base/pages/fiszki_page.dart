@@ -440,8 +440,12 @@ class _FiszkiPageState extends State<FiszkiPage> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(value: 'add', child: Text('Dodaj fiszkę')),
-                const PopupMenuItem(value: 'delete', child: Text('Usuń folder')),
+                const PopupMenuItem(value: 'add', child: Text('Dodaj fiszkę', style: TextStyle(color: Colors.white),)),
+                const PopupMenuItem(value: 'delete', child:  Text(
+  'Usuń folder',
+  style: TextStyle(color: Colors.white),
+),
+)
               ],
             ),
             onTap: () => openFolderContent(name, fiszki),
@@ -664,29 +668,34 @@ class _FolderContentPageState extends State<FolderContentPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 build3DButton(
-                  text: 'START QUIZ',
-                  color: Colors.green,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  onPressed: () async {
-                    if (_fiszki.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Folder jest pusty')),
-                      );
-                      return;
-                    }
+  text: 'START QUIZ',
+  color: Colors.green,
+  margin: const EdgeInsets.symmetric(horizontal: 16),
+  onPressed: () async {
+    if (_fiszki.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Folder jest pusty')),
+      );
+      return;
+    }
 
-                    final result = await Navigator.push<bool>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => QuizFiszkiPage(fiszki: _fiszki, folderName: widget.folderName),
-                      ),
-                    );
+    // 👇 Tutaj wstaw Navigator.push z folderName
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QuizFiszkiPage(
+          fiszki: _fiszki,
+          folderName: widget.folderName, // nazwa folderu przekazana do quizu
+        ),
+      ),
+    );
 
-                    if (result == true) {
-                      await _incrementFinishCount();
-                    }
-                  },
-                ),
+    if (result == true) {
+      await _incrementFinishCount();
+    }
+  },
+),
+
 
                 const SizedBox(height: 10),
                 build3DButton(

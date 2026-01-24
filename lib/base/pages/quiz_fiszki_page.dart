@@ -94,52 +94,44 @@ void exitQuiz({required bool finished}) {
   }
 
   // Animowany flip: używamy AnimatedSwitcher z rotacją Y transform
-  Widget _buildFlipCard(Fiszka fiszka) {
-    // content shown depends on showAnswer
-    final front = _CardFace(
-      key: const ValueKey(false),
-      text: fiszka.question,
-      smallText: 'Tap to flip',
-    );
-    final back = _CardFace(
-      key: const ValueKey(true),
-      text: fiszka.answer,
-      smallText: 'Tap to flip',
-    );
+ Widget _buildFlipCard(Fiszka fiszka) {
+  return GestureDetector(
+    onTap: flipFiszka,
+    child: TweenAnimationBuilder<double>(
+      key: ValueKey(currentIndex), // każda fiszka ma unikalny key
+      tween: Tween<double>(begin: 0, end: showAnswer ? 1 : 0),
+      duration: const Duration(milliseconds: 450),
+      builder: (context, val, child) {
+        final angle = val * pi;
+        final isFront = val <= 0.5;
 
-    return GestureDetector(
-      onTap: flipFiszka,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 450),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          // rotate from pi to 0
-          final rotateAnim = Tween(begin: pi, end: 0.0).animate(animation);
-          return AnimatedBuilder(
-            animation: rotateAnim,
-            child: child,
-            builder: (context, child) {
-              final angle = rotateAnim.value;
-              // When angle > pi/2 we swap the side (so text won't appear mirrored).
-              final isUnder = angle > (pi / 2);
-              final transform = Matrix4.identity()
-                ..setEntry(3, 2, 0.001) // perspective
-                ..rotateY(angle);
-              return Transform(
-                transform: transform,
-                alignment: Alignment.center,
-                child: Opacity(
-                  opacity: isUnder ? 0.999 : 1.0, // avoid flicker
-                  child: child,
+        return Transform(
+          alignment: Alignment.center,
+          transform: Matrix4.identity()
+            ..setEntry(3, 2, 0.001) // perspektywa 3D
+            ..rotateY(angle),
+          child: isFront
+              ? _CardFace(
+                  key: ValueKey('front_$currentIndex'),
+                  text: fiszka.question,
+                  smallText: 'Tap to flip',
+                )
+              : Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationY(pi),
+                  child: _CardFace(
+                    key: ValueKey('back_$currentIndex'),
+                    text: fiszka.answer,
+                    smallText: 'Tap to flip',
+                  ),
                 ),
-              );
-            },
-          );
-        },
-        layoutBuilder: (widget, list) => Stack(children: [widget!, ...list]),
-        child: showAnswer ? back : front,
-      ),
-    );
-  }
+        );
+      },
+    ),
+  );
+}
+
+
 
   // Obsługa swipeów
   void _onHorizontalDragEnd(DragEndDetails details) {
@@ -185,26 +177,58 @@ void exitQuiz({required bool finished}) {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F14),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1C1C28),
-        foregroundColor: Colors.white,
-        title: const Text('Quiz Fiszek'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+      appBar: PreferredSize(
+  preferredSize: const Size.fromHeight(110),
+  child: AppBar(
+    automaticallyImplyLeading: false,
+    elevation: 0,
+    flexibleSpace: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF2B2B3D),
+            Color(0xFF1C1C28),
+          ],
         ),
-        // subtile showing progress
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(28),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Text(
-              '${currentIndex + 1} / $total',
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-            ),
+      ),
+    ),
+    leading: IconButton(
+      icon: const Icon(Icons.arrow_back, color: Colors.white),
+      onPressed: () => Navigator.pop(context),
+    ),
+    title: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Quiz Fiszek',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+      ],
+    ),
+    bottom: PreferredSize(
+      preferredSize: const Size.fromHeight(28),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(
+          '${currentIndex + 1} / $total',
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
+    ),
+  ),
+),
+
       body: SafeArea(
         child: GestureDetector(
           onHorizontalDragEnd: _onHorizontalDragEnd,
