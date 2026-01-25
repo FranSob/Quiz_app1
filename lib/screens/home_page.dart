@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app1/base/pages/courses_page.dart';
 import 'package:quiz_app1/base/pages/fiszki_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -88,42 +89,68 @@ class HomePage extends StatelessWidget {
 
               const SizedBox(height: 32),
 // ===== PRZYCISK FISZKI =====
-              InkWell(
-                borderRadius: BorderRadius.circular(20),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const FiszkiPage(),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
-                  decoration: BoxDecoration(
-                    color: Colors.deepPurple,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.deepPurple.withOpacity(0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'FISZKI',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+InkWell(
+  borderRadius: BorderRadius.circular(20),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const FiszkiPage(),
+      ),
+    );
+  },
+  child: Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF6A5AE0),
+          Color(0xFF4D4AE8),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.45),
+          blurRadius: 18,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Icon(
+          Icons.menu_book_rounded,
+          color: Colors.white,
+          size: 32,
+        ),
+        SizedBox(height: 12),
+        Text(
+          'FISZKI',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.1,
+          ),
+        ),
+        SizedBox(height: 6),
+        Text(
+          'Ucz się szybko i skutecznie',
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
               // ===== KURSY (sekcja z trzema kafelkami) =====
               const Text(
                 'KURSY',
@@ -139,23 +166,6 @@ class HomePage extends StatelessWidget {
               // trzy kafelki w wierszu (responsywne)
               Row(
                 children: [
-                  _CourseTile(
-                    title: 'Matematyka',
-                    subtitle: 'Algebra, Geometria',
-                    icon: Icons.calculate,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF4CA1FF), Color(0xFF0072FF)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    onTap: () {
-                      // przykładowa nawigacja - możesz podłączyć inny ekran
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const FiszkiPage()),
-                      );
-                    },
-                  ),
                   const SizedBox(width: 12),
                   _CourseTile(
                     title: 'Biologia',
@@ -169,7 +179,7 @@ class HomePage extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const FiszkiPage()),
+                        MaterialPageRoute(builder: (_) => const CoursePage(title: 'Biologia')),
                       );
                     },
                   ),
@@ -186,7 +196,25 @@ class HomePage extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const FiszkiPage()),
+                        MaterialPageRoute(builder: (_) => const CoursePage(title: 'Chemia')),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  _CourseTile(
+                    title: 'Matematyka',
+                    subtitle: 'Algebra, Geometria',
+                    icon: Icons.calculate,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4CA1FF), Color(0xFF0072FF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    onTap: () {
+                      // przykładowa nawigacja - możesz podłączyć inny ekran
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CoursePage(title: 'Matematyka')),
                       );
                     },
                   ),

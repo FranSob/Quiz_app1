@@ -28,9 +28,18 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _pages = const [
     HomePage(),
-    Center(child: Text("Statystyki")),
-    Center(child: Text("Profil")),
-    Center(child: Text("Wersja premium")),
+    Center(child: Text('Statystyki', style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,)),),
+    Center(child: Text("Profil", style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,)),),
+    Center(child: Text("Wersja premium",style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,)),),
   ];
 
   void _onNavTap(int index) => setState(() => _currentIndex = index);
