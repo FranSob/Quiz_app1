@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quiz_app1/base/pages/interactive_quiz_page.dart'; // <-- podłączenie quizu
 
 class CoursePage extends StatelessWidget {
   final String title;
@@ -130,11 +131,24 @@ class CoursePage extends StatelessWidget {
     );
   }
 
+  // lista tematów (tylko nazwy) dla Biologii — bez fiszek
+  List<String> _bioTopics() {
+    return [
+      'Komórki',
+      'Genetyka',
+      'Ekologia',
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = _themeFor(title);
     final IconData icon = theme['icon'] as IconData;
     final LinearGradient gradient = theme['gradient'] as LinearGradient;
+
+    // jeśli to biologia — przygotuj tematy (lista stringów)
+    final bool isBiology = title.toLowerCase().contains('bio');
+    final bioTopics = isBiology ? _bioTopics() : <String>[];
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F14),
@@ -150,29 +164,128 @@ class CoursePage extends StatelessWidget {
             children: [
               buildCourseHeader(title: title, icon: icon, gradient: gradient),
               buildQuizSearchBar(),
-              // placeholder — tu w przyszłości lista quizów/lekcji
+              // lista tematów / quizów
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    SizedBox(height: 8),
-                    Text(
+                  children: [
+                    const SizedBox(height: 8),
+                    const Text(
                       'Dostępne quizy',
                       style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
+                    if (isBiology)
+                      // pokaż boxy tematów dla biologii (tylko nazwy, bez fiszek)
+                      ...bioTopics.map((topic) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: TopicTile(
+                            title: topic,
+                            subtitle: 'Quiz z $topic',
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF9EEBB0), Color(0xFF66D76A)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            onTap: () {
+                              // otwórz interaktywny quiz (Kahoot-style) dla wybranego tematu
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => InteractiveQuizPage(course: title, topic: topic),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      }).toList()
+                    else
+                      const Text(
+                        'Lista quizów będzie dostępna wkrótce.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    const SizedBox(height: 20),
                     // tymczasowy placeholder
-                    Text(
-                      'Tutaj pojawi się lista quizów dla wybranego kursu. Wyszukiwarka powyżej będzie filtrować tę listę.',
+                    const Text(
+                      'Opis: tutaj będzie zawartość kursu — lekcje, moduły i postęp.',
                       style: TextStyle(color: Colors.white70),
                     ),
-                    SizedBox(height: 200),
+                    const SizedBox(height: 120),
                   ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Prosty, spójny wizualnie TopicTile
+class TopicTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final LinearGradient gradient;
+  final VoidCallback onTap;
+
+  const TopicTile({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.gradient,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.45), blurRadius: 12, offset: const Offset(0, 8)),
+            BoxShadow(color: Colors.white.withOpacity(0.02), blurRadius: 2, offset: const Offset(-2, -2)),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.help_outline, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text('START', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
         ),
       ),
     );
