@@ -1,0 +1,39 @@
+{
+  "Biologia": {
+    "Komórki": [
+      {
+        "question": "Jednostka strukturalna życia to:",
+        "options": ["Tkanka", "Komórka", "Organelle", "Organ"],
+        "correctIndex": 1
+      },
+      {
+        "question": "Organelle odpowiedzialne za energię to:",
+        "options": ["Rybosomy", "Mitochondria", "Chloroplasty", "Lizosomy"],
+        "correctIndex": 1
+      }
+    ],
+    "Genetyka": [
+      {
+        "question": "Nośnik informacji genetycznej:",
+        "options": ["RNA", "Białko", "DNA", "Lipidy"],
+        "correctIndex": 2
+      }
+    ],
+    "Ekologia": [
+      {
+        "question": "Relacja, w której obie strony odnoszą korzyści:",
+        "options": ["Pasożytnictwo", "Mutualizm", "Komensalizm", "Neutralizm"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  "Matematyka": {
+    "Arytmetyka": [
+      {
+        "question": "Ile to 7 + 6?",
+        "options": ["12", "13", "14", "11"],
+        "correctIndex": 1
+      }
+    ]
+  }
+}
