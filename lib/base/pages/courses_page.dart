@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../base/models/quiz.dart';
+import '../../services/quiz_service.dart';
+import '../widgets/quiz_tile.dart';
 
 class CoursePage extends StatelessWidget {
   final String title;
 
-  const CoursePage({
-    super.key,
-    required this.title,
-  });
+  const CoursePage({super.key, required this.title});
 
-  // helper: wybiera gradient i ikonę na podstawie tytułu kursu
   Map<String, dynamic> _themeFor(String title) {
     final key = title.toLowerCase();
     if (key.contains('bio') || key.contains('biologia')) {
@@ -50,7 +49,6 @@ class CoursePage extends StatelessWidget {
     }
   }
 
-  // ============ Znaczek na górze ============
   Widget buildCourseHeader({
     required String title,
     required IconData icon,
@@ -98,7 +96,6 @@ class CoursePage extends StatelessWidget {
     );
   }
 
-  // ============ Pasek Wyszukiwania ============
   Widget buildQuizSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
@@ -138,7 +135,6 @@ class CoursePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F14),
-      // pozostawiam AppBar (możesz go schować jeśli chcesz używać headera jako nagłówka)
       appBar: AppBar(
         backgroundColor: const Color(0xFF1C1C28),
         foregroundColor: Colors.white,
@@ -150,24 +146,51 @@ class CoursePage extends StatelessWidget {
             children: [
               buildCourseHeader(title: title, icon: icon, gradient: gradient),
               buildQuizSearchBar(),
-              // placeholder — tu w przyszłości lista quizów/lekcji
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    SizedBox(height: 8),
-                    Text(
+                  children: [
+                    const SizedBox(height: 8),
+                    const Text(
                       'Dostępne quizy',
-                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
                     ),
-                    SizedBox(height: 12),
-                    // tymczasowy placeholder
-                    Text(
-                      'Tutaj pojawi się lista quizów dla wybranego kursu. Wyszukiwarka powyżej będzie filtrować tę listę.',
-                      style: TextStyle(color: Colors.white70),
+                    const SizedBox(height: 12),
+                    FutureBuilder<List<Quiz>>(
+                      future: QuizService.fetchQuizzes(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: CircularProgressIndicator(color: Colors.white),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return const Text(
+                            'Błąd ładowania quizów',
+                            style: TextStyle(color: Colors.redAccent),
+                          );
+                        }
+                        final quizzes = snapshot.data
+                                ?.where((q) => q.course.toLowerCase().contains(title.toLowerCase()))
+                                .toList() ??
+                            [];
+                        if (quizzes.isEmpty) {
+                          return const Text(
+                            'Brak quizów dla tego kursu',
+                            style: TextStyle(color: Colors.white54),
+                          );
+                        }
+                        return Column(
+                          children: quizzes.map((q) => QuizTile(quiz: q)).toList(),
+                        );
+                      },
                     ),
-                    SizedBox(height: 200),
+                    const SizedBox(height: 200),
                   ],
                 ),
               ),
