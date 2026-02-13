@@ -31,7 +31,7 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
   void initState() {
     super.initState();
     // adjust baseUrl for your setup
-    api = QuizApi(baseUrl: 'http://localhost:3000'); // emulator
+    api = QuizApi(baseUrl: 'http://10.0.2.2:3000');
     _loadQuestions();
   }
 
@@ -75,7 +75,14 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
     if (widget.topic.isNotEmpty) {
       // 1️⃣ Spróbuj endpoint /quiz/{course}/{topic}
       final urlTopic = Uri.parse('$base/quiz/$courseEnc/$topicEnc');
+
+      // 🔹 LOGI DEBUG
+      print('Flutter wywołuje URL: $urlTopic');
+
       final resTopic = await http.get(urlTopic);
+
+      print('Status: ${resTopic.statusCode}');
+      print('Body: ${resTopic.body}');
 
       if (resTopic.statusCode == 200) {
         final List data = jsonDecode(resTopic.body) as List;
@@ -83,13 +90,20 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
       } else {
         // 2️⃣ Spróbuj /quizzes/{course} i znajdź topic
         final urlGroups = Uri.parse('$base/quizzes/$courseEnc');
+
+        print('Fallback URL: $urlGroups');
+
         final resGroups = await http.get(urlGroups);
+
+        print('Status fallback: ${resGroups.statusCode}');
+        print('Body fallback: ${resGroups.body}');
 
         if (resGroups.statusCode == 200) {
           final List groups = jsonDecode(resGroups.body) as List;
 
           for (final g in groups) {
-            if (g is Map<String, dynamic> && g['topic']?.toString().toLowerCase() == widget.topic.toLowerCase()) {
+            if (g is Map<String, dynamic> &&
+                g['topic']?.toString().toLowerCase() == widget.topic.toLowerCase()) {
               final List qs = (g['questions'] ?? []) as List;
               loaded = qs.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList();
               break;
@@ -104,7 +118,13 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
     } else {
       // 3️⃣ Brak tematu -> pobierz wszystkie quizy kursu
       final urlGroups = Uri.parse('$base/quizzes/$courseEnc');
+
+      print('Ładowanie wszystkich quizów: $urlGroups');
+
       final resGroups = await http.get(urlGroups);
+
+      print('Status all quizzes: ${resGroups.statusCode}');
+      print('Body all quizzes: ${resGroups.body}');
 
       if (resGroups.statusCode == 200) {
         final List groups = jsonDecode(resGroups.body) as List;
@@ -117,13 +137,20 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
       } else {
         // fallback: /quiz/{course}
         final urlCourse = Uri.parse('$base/quiz/$courseEnc');
+
+        print('Fallback course URL: $urlCourse');
+
         final resCourse = await http.get(urlCourse);
+
+        print('Status fallback course: ${resCourse.statusCode}');
+        print('Body fallback course: ${resCourse.body}');
 
         if (resCourse.statusCode == 200) {
           final List data = jsonDecode(resCourse.body) as List;
           loaded = data.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList();
         } else {
           // ostateczny fallback
+          print('Wywołanie fetchCourseQuiz z API');
           loaded = await api.fetchCourseQuiz(widget.course);
         }
       }
@@ -133,6 +160,10 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
       setState(() {
         questions = loaded;
         loading = false;
+        // 🔹 jeśli lista pytań jest pusta
+        if (loaded.isEmpty) {
+          error = 'Brak pytań do wyświetlenia';
+        }
       });
     }
   } catch (e) {
@@ -144,6 +175,7 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
     }
   }
 }
+
 
   void _onSelect(int idx) {
     if (answered) return; // jednorazowo
