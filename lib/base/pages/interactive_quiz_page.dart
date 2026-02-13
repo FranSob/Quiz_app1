@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:quiz_app1/base/models/quiz_question.dart';
 import 'package:quiz_app1/services/quiz_api.dart';
 
@@ -29,7 +31,7 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
   void initState() {
     super.initState();
     // adjust baseUrl for your setup
-    api = QuizApi(baseUrl: 'http://10.0.2.2:3000'); // emulator
+    api = QuizApi(baseUrl: 'http://localhost:3000'); // emulator
     _loadQuestions();
   }
 
@@ -39,26 +41,109 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
     super.dispose();
   }
 
-  Future<void> _loadQuestions() async {
-    setState(() {
-      loading = true;
-      error = null;
-    });
-    try {
-      final q = widget.topic.isNotEmpty
-          ? await api.fetchTopicQuiz(widget.course, widget.topic)
-          : await api.fetchCourseQuiz(widget.course);
+  // helper to parse a question map into QuizQuestion with fallback for 'answer' field
+  QuizQuestion _parseQuestionMap(Map<String, dynamic> m) {
+    final question = m['question'] as String;
+    final List<dynamic> optsDyn = m['options'] as List<dynamic>;
+    final options = optsDyn.map((e) => e.toString()).toList();
+    if (m.containsKey('correctIndex')) {
+      final idx = (m['correctIndex'] as num).toInt();
+      return QuizQuestion(question: question, options: options, correctIndex: idx);
+    } else if (m.containsKey('answer')) {
+      final answer = m['answer'].toString();
+      final idx = options.indexOf(answer);
+      return QuizQuestion(question: question, options: options, correctIndex: idx >= 0 ? idx : 0);
+    } else {
+      // fallback: assume first option is correct (shouldn't happen in normal data)
+      return QuizQuestion(question: question, options: options, correctIndex: 0);
+    }
+  }
+
+ Future<void> _loadQuestions() async {
+  setState(() {
+    loading = true;
+    error = null;
+  });
+
+  final base = api.baseUrl;
+  final courseEnc = Uri.encodeComponent(widget.course);
+  final topicEnc = Uri.encodeComponent(widget.topic);
+
+  try {
+    List<QuizQuestion> loaded = [];
+
+    if (widget.topic.isNotEmpty) {
+      // 1️⃣ Spróbuj endpoint /quiz/{course}/{topic}
+      final urlTopic = Uri.parse('$base/quiz/$courseEnc/$topicEnc');
+      final resTopic = await http.get(urlTopic);
+
+      if (resTopic.statusCode == 200) {
+        final List data = jsonDecode(resTopic.body) as List;
+        loaded = data.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList();
+      } else {
+        // 2️⃣ Spróbuj /quizzes/{course} i znajdź topic
+        final urlGroups = Uri.parse('$base/quizzes/$courseEnc');
+        final resGroups = await http.get(urlGroups);
+
+        if (resGroups.statusCode == 200) {
+          final List groups = jsonDecode(resGroups.body) as List;
+
+          for (final g in groups) {
+            if (g is Map<String, dynamic> && g['topic']?.toString().toLowerCase() == widget.topic.toLowerCase()) {
+              final List qs = (g['questions'] ?? []) as List;
+              loaded = qs.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList();
+              break;
+            }
+          }
+
+          if (loaded.isEmpty) throw Exception('Topic not found in course groups');
+        } else {
+          throw Exception('Cannot fetch topic: ${resTopic.statusCode}');
+        }
+      }
+    } else {
+      // 3️⃣ Brak tematu -> pobierz wszystkie quizy kursu
+      final urlGroups = Uri.parse('$base/quizzes/$courseEnc');
+      final resGroups = await http.get(urlGroups);
+
+      if (resGroups.statusCode == 200) {
+        final List groups = jsonDecode(resGroups.body) as List;
+        for (final g in groups) {
+          if (g is Map<String, dynamic> && g.containsKey('questions')) {
+            final List qs = (g['questions'] ?? []) as List;
+            loaded.addAll(qs.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList());
+          }
+        }
+      } else {
+        // fallback: /quiz/{course}
+        final urlCourse = Uri.parse('$base/quiz/$courseEnc');
+        final resCourse = await http.get(urlCourse);
+
+        if (resCourse.statusCode == 200) {
+          final List data = jsonDecode(resCourse.body) as List;
+          loaded = data.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList();
+        } else {
+          // ostateczny fallback
+          loaded = await api.fetchCourseQuiz(widget.course);
+        }
+      }
+    }
+
+    if (mounted) {
       setState(() {
-        questions = q;
+        questions = loaded;
         loading = false;
       });
-    } catch (e) {
+    }
+  } catch (e) {
+    if (mounted) {
       setState(() {
         error = e.toString();
         loading = false;
       });
     }
   }
+}
 
   void _onSelect(int idx) {
     if (answered) return; // jednorazowo

@@ -14,14 +14,14 @@
     ],
     "Genetyka": [
       {
-        "question": "Nośnik informacji genetycznej:",
+        "question": "Nośnik informacji genetycznej to:",
         "options": ["RNA", "Białko", "DNA", "Lipidy"],
         "correctIndex": 2
       }
     ],
     "Ekologia": [
       {
-        "question": "Relacja, w której obie strony odnoszą korzyści:",
+        "question": "Relacja, w której obie strony odnoszą korzyści to:",
         "options": ["Pasożytnictwo", "Mutualizm", "Komensalizm", "Neutralizm"],
         "correctIndex": 1
       }
@@ -33,6 +33,29 @@
         "question": "Ile to 7 + 6?",
         "options": ["12", "13", "14", "11"],
         "correctIndex": 1
+      }
+    ],
+    "Algebra": [
+      {
+        "question": "Rozwiąż równanie: x + 2 = 5. x = ?",
+        "options": ["2", "3", "7", "5"],
+        "correctIndex": 1
+      }
+    ]
+  },
+  "Chemia": {
+    "Organiczna": [
+      {
+        "question": "Jakie pierwiastki dominują w związkach organicznych?",
+        "options": ["C, H, O", "Na, Cl", "Fe, S", "K, Ca"],
+        "correctIndex": 0
+      }
+    ],
+    "Nieorganiczna": [
+      {
+        "question": "co to jest H20?",
+        "options": ["pot", "sól", "woda", "masło"],
+        "correctIndex": 2
       }
     ]
   }
