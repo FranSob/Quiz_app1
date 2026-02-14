@@ -10,7 +10,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F14),
       body: SafeArea(
-        child: Padding(
+         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,7 +150,7 @@ InkWell(
     ),
   ),
 ),
-
+const SizedBox(height: 24),
               // ===== KURSY (sekcja z trzema kafelkami) =====
               const Text(
                 'KURSY',
@@ -164,9 +164,9 @@ InkWell(
               const SizedBox(height: 12),
 
               // trzy kafelki w wierszu (responsywne)
-              Row(
+              Column(
                 children: [
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 12),
                   _CourseTile(
                     title: 'Biologia',
                     subtitle: 'Anatomia, Ekologia',
@@ -183,7 +183,7 @@ InkWell(
                       );
                     },
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 12),
                   _CourseTile(
                     title: 'Chemia',
                     subtitle: 'Organiczna, Nieorganiczna',
@@ -200,7 +200,7 @@ InkWell(
                       );
                     },
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 12),
                   _CourseTile(
                     title: 'Matematyka',
                     subtitle: 'Algebra, Geometria',
@@ -251,13 +251,12 @@ class _CourseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // responsywna szerokość - trzy kafelki mieszczą się w jednym wierszu
-    final tileWidth = (MediaQuery.of(context).size.width - 20 * 2 - 12 * 2) / 3;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-        width: tileWidth,
+       width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           gradient: gradient,

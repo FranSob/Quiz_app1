@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:quiz_app1/base/models/quiz_question.dart';
 import 'package:quiz_app1/config.dart';
 import 'package:quiz_app1/services/quiz_api.dart';
+import 'package:quiz_app1/services/quiz_stats_storage.dart';
 
 class InteractiveQuizPage extends StatefulWidget {
   final String course;
@@ -27,13 +28,13 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
   bool answered = false;
   int? selectedIndex;
   Timer? _nextTimer;
+  bool _resultRecorded = false;
 
   @override
   void initState() {
     super.initState();
-        api = QuizApi(baseUrl: resolveApiBaseUrl());
+    api = QuizApi(baseUrl: resolveApiBaseUrl());
     _loadQuestions();
-  
   }
 
   @override
@@ -60,95 +61,93 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
     }
   }
 
- Future<void> _loadQuestions() async {
-  setState(() {
-    loading = true;
-    error = null;
-  });
+  Future<void> _loadQuestions() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
 
-  final base = api.baseUrl;
-  final courseEnc = Uri.encodeComponent(widget.course);
-  final topicEnc = Uri.encodeComponent(widget.topic);
+    final base = api.baseUrl;
+    final courseEnc = Uri.encodeComponent(widget.course);
+    final topicEnc = Uri.encodeComponent(widget.topic);
 
-  try {
-    List<QuizQuestion> loaded = [];
+    try {
+      List<QuizQuestion> loaded = [];
 
-    if (widget.topic.isNotEmpty) {
-      final urlTopic = Uri.parse('$base/quiz/$courseEnc/$topicEnc');
+      if (widget.topic.isNotEmpty) {
+        final urlTopic = Uri.parse('$base/quiz/$courseEnc/$topicEnc');
 
-      print('🔎 REQUEST URL: $urlTopic');
+        print('🔎 REQUEST URL: $urlTopic');
 
-      final resTopic = await http.get(urlTopic);
+        final resTopic = await http.get(urlTopic);
 
-      print('📡 STATUS: ${resTopic.statusCode}');
-      print('📦 BODY: ${resTopic.body}');
+        print('📡 STATUS: ${resTopic.statusCode}');
+        print('📦 BODY: ${resTopic.body}');
 
-      if (resTopic.statusCode == 200) {
-        final decoded = jsonDecode(resTopic.body);
+        if (resTopic.statusCode == 200) {
+          final decoded = jsonDecode(resTopic.body);
 
-        if (decoded is List) {
-          loaded = decoded
-              .map((e) => _parseQuestionMap(e as Map<String, dynamic>))
-              .toList();
+          if (decoded is List) {
+            loaded = decoded
+                .map((e) => _parseQuestionMap(e as Map<String, dynamic>))
+                .toList();
+          } else {
+            throw Exception('Niepoprawny format danych (nie jest listą)');
+          }
         } else {
-          throw Exception('Niepoprawny format danych (nie jest listą)');
+          // ❗ jeśli endpoint nie istnieje → zatrzymaj loader i pokaż URL
+          throw Exception(
+              'Endpoint nie istnieje (${resTopic.statusCode})\nURL: $urlTopic');
         }
       } else {
-        // ❗ jeśli endpoint nie istnieje → zatrzymaj loader i pokaż URL
-        throw Exception(
-            'Endpoint nie istnieje (${resTopic.statusCode})\nURL: $urlTopic');
-      }
-    } else {
-      final urlCourse = Uri.parse('$base/quiz/$courseEnc');
+        final urlCourse = Uri.parse('$base/quiz/$courseEnc');
 
-      print('🔎 REQUEST URL: $urlCourse');
+        print('🔎 REQUEST URL: $urlCourse');
 
-      final resCourse = await http.get(urlCourse);
+        final resCourse = await http.get(urlCourse);
 
-      print('📡 STATUS: ${resCourse.statusCode}');
-      print('📦 BODY: ${resCourse.body}');
+        print('📡 STATUS: ${resCourse.statusCode}');
+        print('📦 BODY: ${resCourse.body}');
 
-      if (resCourse.statusCode == 200) {
-        final decoded = jsonDecode(resCourse.body);
+        if (resCourse.statusCode == 200) {
+          final decoded = jsonDecode(resCourse.body);
 
-        if (decoded is List) {
-          loaded = decoded
-              .map((e) => _parseQuestionMap(e as Map<String, dynamic>))
-              .toList();
+          if (decoded is List) {
+            loaded = decoded
+                .map((e) => _parseQuestionMap(e as Map<String, dynamic>))
+                .toList();
+          } else {
+            throw Exception('Niepoprawny format danych (nie jest listą)');
+          }
         } else {
-          throw Exception('Niepoprawny format danych (nie jest listą)');
+          throw Exception(
+              'Endpoint nie istnieje (${resCourse.statusCode})\nURL: $urlCourse');
         }
-      } else {
-        throw Exception(
-            'Endpoint nie istnieje (${resCourse.statusCode})\nURL: $urlCourse');
       }
-    }
 
-    // ❗ Jeśli lista jest pusta → też traktujemy jako błąd
-    if (loaded.isEmpty) {
-      throw Exception(
-          'Brak pytań dla:\nKurs: ${widget.course}\nTemat: ${widget.topic}');
-    }
+      // ❗ Jeśli lista jest pusta → też traktujemy jako błąd
+      if (loaded.isEmpty) {
+        throw Exception(
+            'Brak pytań dla:\nKurs: ${widget.course}\nTemat: ${widget.topic}');
+      }
 
-    if (mounted) {
-      setState(() {
-        questions = loaded;
-        loading = false;
-      });
-    }
-  } catch (e) {
-    print('❌ ERROR: $e');
+      if (mounted) {
+        setState(() {
+          questions = loaded;
+          loading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ ERROR: $e');
 
-    if (mounted) {
-      setState(() {
-        error = e.toString();
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          error = e.toString();
+          loading = false;
+        });
+      }
     }
   }
-}
-
-
 
   void _onSelect(int idx) {
     if (answered) return; // jednorazowo
@@ -167,10 +166,33 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
           selectedIndex = null;
         });
       } else {
-        // koniec quizu -> pokaż dialog z wynikiem
-        _showResultDialog();
+        // koniec quizu -> zapisz statystyki i pokaż dialog z wynikiem
+        _recordStatsAndShowResult();
       }
     });
+  }
+
+  Future<void> _recordStatsAndShowResult() async {
+    if (_resultRecorded) {
+      _showResultDialog();
+      return;
+    }
+
+    _resultRecorded = true;
+
+    try {
+      await QuizStatsStorage().recordQuizCompletion(
+        course: widget.course,
+        score: score,
+        totalQuestions: questions.length,
+      );
+    } catch (e) {
+      // jeśli zapis statystyk się nie powiedzie, logujemy, ale i tak pokazujemy wynik
+      print('❌ ERROR recording stats: $e');
+    }
+
+    if (!mounted) return;
+    _showResultDialog();
   }
 
   void _showResultDialog() {
