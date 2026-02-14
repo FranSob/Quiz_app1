@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:quiz_app1/base/models/quiz_question.dart';
+import 'package:quiz_app1/config.dart';
 import 'package:quiz_app1/services/quiz_api.dart';
 
 class InteractiveQuizPage extends StatefulWidget {
@@ -30,8 +31,7 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
   @override
   void initState() {
     super.initState();
-    // adjust baseUrl for your setup
-    api = QuizApi(baseUrl: 'http://10.0.2.2:3000');
+        api = QuizApi(baseUrl: resolveApiBaseUrl());
     _loadQuestions();
   
   }

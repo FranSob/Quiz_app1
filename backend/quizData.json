@@ -25,6 +25,18 @@
         "options": ["Pasożytnictwo", "Mutualizm", "Komensalizm", "Neutralizm"],
         "correctIndex": 1
       }
+    ],
+    "Test": [
+      {
+        "question": "1:",
+        "options": ["2ka", "3", "4", "5"],
+        "correctIndex": 1
+      },
+      {
+        "question": "Organelle odpowiedzialne za energię to:",
+        "options": ["Rybosomy", "Mitochondria", "Chloroplasty", "Lizosomy"],
+        "correctIndex": 1
+      }
     ]
   },
   "Matematyka": {

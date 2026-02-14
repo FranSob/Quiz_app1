@@ -23,6 +23,7 @@ class _CoursePageState extends State<CoursePage> {
         'Komórki',
         'Genetyka',
         'Ekologia',
+        'Test',
       ];
 
   List<String> _mathTopics() => [
