@@ -184,8 +184,8 @@ class _CoursePageState extends State<CoursePage> {
     if (titleLower.contains('chem')) topics = _chemTopics();
 
     final filteredTopics = topics
-        .where((t) => t.toLowerCase().contains(_searchQuery))
-        .toList();
+    .where((t) => t.toLowerCase().contains(_searchQuery))
+    .toList();
 
     // gradient dla kafelków (ten sam dla wszystkich tematów w kursie)
     final tileGradient = _tileGradientForCourse(widget.title);
@@ -229,6 +229,7 @@ class _CoursePageState extends State<CoursePage> {
                           subtitle: 'Quiz z $topic',
                           gradient: tileGradient,
                           onTap: () {
+                            print('Start quiz: course=${widget.title}, topic=$topic');
                             Navigator.push(
                               context,
                               MaterialPageRoute(

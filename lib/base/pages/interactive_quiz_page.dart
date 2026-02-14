@@ -33,6 +33,7 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
     // adjust baseUrl for your setup
     api = QuizApi(baseUrl: 'http://10.0.2.2:3000');
     _loadQuestions();
+  
   }
 
   @override
@@ -73,100 +74,71 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
     List<QuizQuestion> loaded = [];
 
     if (widget.topic.isNotEmpty) {
-      // 1️⃣ Spróbuj endpoint /quiz/{course}/{topic}
       final urlTopic = Uri.parse('$base/quiz/$courseEnc/$topicEnc');
 
-      // 🔹 LOGI DEBUG
-      print('Flutter wywołuje URL: $urlTopic');
+      print('🔎 REQUEST URL: $urlTopic');
 
       final resTopic = await http.get(urlTopic);
 
-      print('Status: ${resTopic.statusCode}');
-      print('Body: ${resTopic.body}');
+      print('📡 STATUS: ${resTopic.statusCode}');
+      print('📦 BODY: ${resTopic.body}');
 
       if (resTopic.statusCode == 200) {
-        final List data = jsonDecode(resTopic.body) as List;
-        loaded = data.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList();
-      } else {
-        // 2️⃣ Spróbuj /quizzes/{course} i znajdź topic
-        final urlGroups = Uri.parse('$base/quizzes/$courseEnc');
+        final decoded = jsonDecode(resTopic.body);
 
-        print('Fallback URL: $urlGroups');
-
-        final resGroups = await http.get(urlGroups);
-
-        print('Status fallback: ${resGroups.statusCode}');
-        print('Body fallback: ${resGroups.body}');
-
-        if (resGroups.statusCode == 200) {
-          final List groups = jsonDecode(resGroups.body) as List;
-
-          for (final g in groups) {
-            if (g is Map<String, dynamic> &&
-                g['topic']?.toString().toLowerCase() == widget.topic.toLowerCase()) {
-              final List qs = (g['questions'] ?? []) as List;
-              loaded = qs.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList();
-              break;
-            }
-          }
-
-          if (loaded.isEmpty) throw Exception('Topic not found in course groups');
+        if (decoded is List) {
+          loaded = decoded
+              .map((e) => _parseQuestionMap(e as Map<String, dynamic>))
+              .toList();
         } else {
-          throw Exception('Cannot fetch topic: ${resTopic.statusCode}');
+          throw Exception('Niepoprawny format danych (nie jest listą)');
         }
+      } else {
+        // ❗ jeśli endpoint nie istnieje → zatrzymaj loader i pokaż URL
+        throw Exception(
+            'Endpoint nie istnieje (${resTopic.statusCode})\nURL: $urlTopic');
       }
     } else {
-      // 3️⃣ Brak tematu -> pobierz wszystkie quizy kursu
-      final urlGroups = Uri.parse('$base/quizzes/$courseEnc');
+      final urlCourse = Uri.parse('$base/quiz/$courseEnc');
 
-      print('Ładowanie wszystkich quizów: $urlGroups');
+      print('🔎 REQUEST URL: $urlCourse');
 
-      final resGroups = await http.get(urlGroups);
+      final resCourse = await http.get(urlCourse);
 
-      print('Status all quizzes: ${resGroups.statusCode}');
-      print('Body all quizzes: ${resGroups.body}');
+      print('📡 STATUS: ${resCourse.statusCode}');
+      print('📦 BODY: ${resCourse.body}');
 
-      if (resGroups.statusCode == 200) {
-        final List groups = jsonDecode(resGroups.body) as List;
-        for (final g in groups) {
-          if (g is Map<String, dynamic> && g.containsKey('questions')) {
-            final List qs = (g['questions'] ?? []) as List;
-            loaded.addAll(qs.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList());
-          }
+      if (resCourse.statusCode == 200) {
+        final decoded = jsonDecode(resCourse.body);
+
+        if (decoded is List) {
+          loaded = decoded
+              .map((e) => _parseQuestionMap(e as Map<String, dynamic>))
+              .toList();
+        } else {
+          throw Exception('Niepoprawny format danych (nie jest listą)');
         }
       } else {
-        // fallback: /quiz/{course}
-        final urlCourse = Uri.parse('$base/quiz/$courseEnc');
-
-        print('Fallback course URL: $urlCourse');
-
-        final resCourse = await http.get(urlCourse);
-
-        print('Status fallback course: ${resCourse.statusCode}');
-        print('Body fallback course: ${resCourse.body}');
-
-        if (resCourse.statusCode == 200) {
-          final List data = jsonDecode(resCourse.body) as List;
-          loaded = data.map((e) => _parseQuestionMap(e as Map<String, dynamic>)).toList();
-        } else {
-          // ostateczny fallback
-          print('Wywołanie fetchCourseQuiz z API');
-          loaded = await api.fetchCourseQuiz(widget.course);
-        }
+        throw Exception(
+            'Endpoint nie istnieje (${resCourse.statusCode})\nURL: $urlCourse');
       }
+    }
+
+    // ❗ Jeśli lista jest pusta → też traktujemy jako błąd
+    if (loaded.isEmpty) {
+      throw Exception(
+          'Brak pytań dla:\nKurs: ${widget.course}\nTemat: ${widget.topic}');
     }
 
     if (mounted) {
       setState(() {
         questions = loaded;
         loading = false;
-        // 🔹 jeśli lista pytań jest pusta
-        if (loaded.isEmpty) {
-          error = 'Brak pytań do wyświetlenia';
-        }
       });
     }
   } catch (e) {
+    print('❌ ERROR: $e');
+
     if (mounted) {
       setState(() {
         error = e.toString();
@@ -175,6 +147,7 @@ class _InteractiveQuizPageState extends State<InteractiveQuizPage> {
     }
   }
 }
+
 
 
   void _onSelect(int idx) {
