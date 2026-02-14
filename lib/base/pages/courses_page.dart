@@ -16,24 +16,25 @@ class CoursePage extends StatefulWidget {
 class _CoursePageState extends State<CoursePage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+    int? _selectedGrade;
 
   // ================= TEMATY =================
 
-  List<String> _bioTopics() => [
-        'Komórki',
-        'Genetyka',
-        'Ekologia',
-        'Test',
+  List<QuizTopic> _bioTopics() => const [
+        QuizTopic(title: 'Komórki', grade: 1),
+        QuizTopic(title: 'Genetyka', grade: 2),
+        QuizTopic(title: 'Ekologia', grade: 3),
       ];
 
-  List<String> _mathTopics() => [
-        'Arytmetyka',
-        'Algebra',
+
+  List<QuizTopic> _mathTopics() => const [
+        QuizTopic(title: 'Arytmetyka', grade: 1),
+        QuizTopic(title: 'Algebra', grade: 2),
       ];
 
-  List<String> _chemTopics() => [
-        'Organiczna',
-        'Nieorganiczna',
+  List<QuizTopic> _chemTopics() => const [
+        QuizTopic(title: 'Organiczna', grade: 3),
+        QuizTopic(title: 'Nieorganiczna', grade: 4),
       ];
 
   // ================= THEME =================
@@ -140,6 +141,36 @@ class _CoursePageState extends State<CoursePage> {
       ),
     );
   }
+Widget buildGradeFilter() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          ChoiceChip(
+            label: const Text('Wszystkie'),
+            selected: _selectedGrade == null,
+            onSelected: (_) => setState(() => _selectedGrade = null),
+            selectedColor: const Color(0xFF6A5AE0),
+            backgroundColor: const Color(0xFF1C1C28),
+            labelStyle: TextStyle(color: _selectedGrade == null ? Colors.white : Colors.white70),
+          ),
+          ...List.generate(4, (i) {
+            final grade = i + 1;
+            return ChoiceChip(
+              label: Text('Klasa $grade'),
+              selected: _selectedGrade == grade,
+              onSelected: (_) => setState(() => _selectedGrade = grade),
+              selectedColor: const Color(0xFF6A5AE0),
+              backgroundColor: const Color(0xFF1C1C28),
+              labelStyle: TextStyle(color: _selectedGrade == grade ? Colors.white : Colors.white70),
+            );
+          }),
+        ],
+      ),
+    );
+  }
 
   // helper: wybiera gradient kafelka na podstawie kursu (daje pasujący akcent)
   LinearGradient _tileGradientForCourse(String courseTitle) {
@@ -179,13 +210,14 @@ class _CoursePageState extends State<CoursePage> {
 
     final titleLower = widget.title.toLowerCase();
 
-    List<String> topics = [];
+   List<QuizTopic> topics = [];
     if (titleLower.contains('bio')) topics = _bioTopics();
     if (titleLower.contains('matem')) topics = _mathTopics();
     if (titleLower.contains('chem')) topics = _chemTopics();
 
     final filteredTopics = topics
-    .where((t) => t.toLowerCase().contains(_searchQuery))
+      .where((t) => t.title.toLowerCase().contains(_searchQuery))
+        .where((t) => _selectedGrade == null || t.grade == _selectedGrade)
     .toList();
 
     // gradient dla kafelków (ten sam dla wszystkich tematów w kursie)
@@ -207,6 +239,7 @@ class _CoursePageState extends State<CoursePage> {
               gradient: gradient,
             ),
             buildQuizSearchBar(),
+            buildGradeFilter(),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -226,8 +259,9 @@ class _CoursePageState extends State<CoursePage> {
                       (topic) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: TopicTile(
-                          title: topic,
-                          subtitle: 'Quiz z $topic',
+                          title: topic.title,
+                          subtitle: 'Quiz z ${topic.title}',
+                          grade: topic.grade,
                           gradient: tileGradient,
                           onTap: () {
                             print('Start quiz: course=${widget.title}, topic=$topic');
@@ -236,7 +270,7 @@ class _CoursePageState extends State<CoursePage> {
                               MaterialPageRoute(
                                 builder: (_) => InteractiveQuizPage(
                                   course: widget.title,
-                                  topic: topic,
+                                  topic: topic.title,
                                 ),
                               ),
                             );
@@ -264,6 +298,7 @@ class _CoursePageState extends State<CoursePage> {
 class TopicTile extends StatelessWidget {
   final String title;
   final String subtitle;
+  final int grade;
   final LinearGradient gradient;
   final VoidCallback onTap;
 
@@ -271,6 +306,7 @@ class TopicTile extends StatelessWidget {
     super.key,
     required this.title,
     required this.subtitle,
+    required this.grade,
     required this.gradient,
     required this.onTap,
   });
@@ -322,6 +358,18 @@ class TopicTile extends StatelessWidget {
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(20),
               ),
+              child: Text(
+                'Klasa $grade',
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: const Text('START', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
             ),
           ],
@@ -329,4 +377,11 @@ class TopicTile extends StatelessWidget {
       ),
     );
   }
+  }
+
+class QuizTopic {
+  final String title;
+  final int grade;
+
+  const QuizTopic({required this.title, required this.grade});
 }
