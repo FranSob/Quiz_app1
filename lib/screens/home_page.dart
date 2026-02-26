@@ -1,9 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:quiz_app1/base/pages/courses_page.dart';
 import 'package:quiz_app1/base/pages/fiszki_page.dart';
+import 'package:quiz_app1/base/pages/interactive_quiz_page.dart';
+import 'package:quiz_app1/services/unfinished_quiz_storage.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final UnfinishedQuizStorage _unfinishedQuizStorage = UnfinishedQuizStorage();
+  List<UnfinishedQuizProgress> _unfinishedQuizzes = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnfinishedQuizzes();
+  }
+
+  Future<void> _loadUnfinishedQuizzes() async {
+    final loaded = await _unfinishedQuizStorage.loadAll();
+    if (!mounted) return;
+    setState(() {
+      _unfinishedQuizzes = loaded;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +112,40 @@ class HomePage extends StatelessWidget {
               ),
 
               const SizedBox(height: 32),
+               if (_unfinishedQuizzes.isNotEmpty) ...[
+                const Text(
+                  'NIEDOKOŃCZONE QUIZY',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ..._unfinishedQuizzes.map(
+                  (quiz) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _UnfinishedQuizTile(
+                      progress: quiz,
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => InteractiveQuizPage(
+                              course: quiz.course,
+                              topic: quiz.topic,
+                              initialProgress: quiz,
+                            ),
+                          ),
+                        );
+                        _loadUnfinishedQuizzes();
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
 // ===== PRZYCISK FISZKI =====
 InkWell(
   borderRadius: BorderRadius.circular(20),
@@ -299,6 +357,56 @@ class _CourseTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text('START', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+class _UnfinishedQuizTile extends StatelessWidget {
+  final UnfinishedQuizProgress progress;
+  final VoidCallback onTap;
+
+  const _UnfinishedQuizTile({required this.progress, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final progressValue = progress.totalQuestions == 0
+        ? 0.0
+        : (progress.currentIndex + 1) / progress.totalQuestions;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C28),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${progress.course} • ${progress.topic}',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Postęp: ${progress.currentIndex + 1}/${progress.totalQuestions} • Punkty: ${progress.score}',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                minHeight: 6,
+                value: progressValue.clamp(0.0, 1.0),
+                color: const Color(0xFF6A5AE0),
+                backgroundColor: Colors.white12,
+              ),
             ),
           ],
         ),
