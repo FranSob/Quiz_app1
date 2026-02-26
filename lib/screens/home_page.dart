@@ -1,8 +1,10 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:quiz_app1/base/pages/courses_page.dart';
 import 'package:quiz_app1/base/pages/fiszki_page.dart';
-import 'package:quiz_app1/base/pages/interactive_quiz_page.dart';
-import 'package:quiz_app1/services/unfinished_quiz_storage.dart';
+import 'package:quiz_app1/services/auth_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,29 +14,43 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final UnfinishedQuizStorage _unfinishedQuizStorage = UnfinishedQuizStorage();
-  List<UnfinishedQuizProgress> _unfinishedQuizzes = [];
+  final AuthService _authService = AuthService();
+  UserProfile? _currentUser;
 
   @override
   void initState() {
     super.initState();
-    _loadUnfinishedQuizzes();
+    _loadUser();
   }
 
-  Future<void> _loadUnfinishedQuizzes() async {
-    final loaded = await _unfinishedQuizStorage.loadAll();
+  Future<void> _loadUser() async {
+    final user = await _authService.currentUser();
     if (!mounted) return;
-    setState(() {
-      _unfinishedQuizzes = loaded;
-    });
+    setState(() => _currentUser = user);
+  }
+
+  Uint8List? _avatarBytes(String? avatarBase64) {
+    if (avatarBase64 == null || avatarBase64.isEmpty) return null;
+    try {
+      if (avatarBase64.startsWith('data:')) {
+        return UriData.parse(avatarBase64).contentAsBytes();
+      }
+      return base64Decode(avatarBase64);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final avatarBytes = _avatarBytes(_currentUser?.avatarBase64);
+    final greetingName =
+        (_currentUser?.name?.isNotEmpty == true) ? _currentUser!.name : '👋';
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F14),
       body: SafeArea(
-         child: SingleChildScrollView(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,18 +59,17 @@ class _HomePageState extends State<HomePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Column(
+                  // left: greeting column
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Hi 👋',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                        ),
+                        'Hi $greetingName',
+                        style:
+                            const TextStyle(color: Colors.white70, fontSize: 14),
                       ),
-                      SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         'Ready to learn?',
                         style: TextStyle(
                           color: Colors.white,
@@ -64,21 +79,43 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C28),
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black54,
-                          blurRadius: 10,
-                          offset: Offset(0, 6),
+
+                  // right: star + avatar
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1C1C28),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: const [
+                            BoxShadow(
+                                color: Colors.black54,
+                                blurRadius: 10,
+                                offset: Offset(0, 6)),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: const Icon(Icons.star, color: Colors.amber),
-                  )
+                        child: const Icon(Icons.star, color: Colors.amber),
+                      ),
+                      const SizedBox(width: 12),
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: const Color(0xFF1C1C28),
+                        backgroundImage:
+                            avatarBytes != null ? MemoryImage(avatarBytes) : null,
+                        child: avatarBytes == null
+                            ? Text(
+                                (_currentUser?.name?.isNotEmpty == true)
+                                    ? _currentUser!.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
+                              )
+                            : null,
+                      ),
+                    ],
+                  ),
                 ],
               ),
 
@@ -91,12 +128,9 @@ class _HomePageState extends State<HomePage> {
                 decoration: BoxDecoration(
                   color: const Color(0xFF1C1C28),
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
-                      color: Colors.black54,
-                      blurRadius: 12,
-                      offset: Offset(0, 6),
-                    ),
+                        color: Colors.black54, blurRadius: 12, offset: Offset(0, 6)),
                   ],
                 ),
                 child: const Row(
@@ -112,103 +146,71 @@ class _HomePageState extends State<HomePage> {
               ),
 
               const SizedBox(height: 32),
-               if (_unfinishedQuizzes.isNotEmpty) ...[
-                const Text(
-                  'NIEDOKOŃCZONE QUIZY',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ..._unfinishedQuizzes.map(
-                  (quiz) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _UnfinishedQuizTile(
-                      progress: quiz,
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => InteractiveQuizPage(
-                              course: quiz.course,
-                              topic: quiz.topic,
-                              initialProgress: quiz,
-                            ),
-                          ),
-                        );
-                        _loadUnfinishedQuizzes();
-                      },
+
+              // ===== PRZYCISK FISZKI =====
+              InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const FiszkiPage(),
                     ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF6A5AE0),
+                        Color(0xFF4D4AE8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.45),
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.menu_book_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'FISZKI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        'Ucz się szybko i skutecznie',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
-              ],
-// ===== PRZYCISK FISZKI =====
-InkWell(
-  borderRadius: BorderRadius.circular(20),
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const FiszkiPage(),
-      ),
-    );
-  },
-  child: Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF6A5AE0),
-          Color(0xFF4D4AE8),
-        ],
-      ),
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.45),
-          blurRadius: 18,
-          offset: const Offset(0, 10),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        Icon(
-          Icons.menu_book_rounded,
-          color: Colors.white,
-          size: 32,
-        ),
-        SizedBox(height: 12),
-        Text(
-          'FISZKI',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.1,
-          ),
-        ),
-        SizedBox(height: 6),
-        Text(
-          'Ucz się szybko i skutecznie',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    ),
-  ),
-),
-const SizedBox(height: 24),
+              ),
+
+              const SizedBox(height: 24),
               // ===== KURSY (sekcja z trzema kafelkami) =====
               const Text(
                 'KURSY',
@@ -280,8 +282,6 @@ const SizedBox(height: 24),
               ),
 
               const SizedBox(height: 32),
-
-              
             ],
           ),
         ),
@@ -314,7 +314,7 @@ class _CourseTile extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: Container(
-       width: double.infinity,
+        width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           gradient: gradient,
@@ -330,7 +330,7 @@ class _CourseTile extends StatelessWidget {
             // ikona w kółku
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.white24,
                 shape: BoxShape.circle,
               ),
@@ -357,56 +357,6 @@ class _CourseTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text('START', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-class _UnfinishedQuizTile extends StatelessWidget {
-  final UnfinishedQuizProgress progress;
-  final VoidCallback onTap;
-
-  const _UnfinishedQuizTile({required this.progress, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final progressValue = progress.totalQuestions == 0
-        ? 0.0
-        : (progress.currentIndex + 1) / progress.totalQuestions;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1C1C28),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${progress.course} • ${progress.topic}',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Postęp: ${progress.currentIndex + 1}/${progress.totalQuestions} • Punkty: ${progress.score}',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                minHeight: 6,
-                value: progressValue.clamp(0.0, 1.0),
-                color: const Color(0xFF6A5AE0),
-                backgroundColor: Colors.white12,
-              ),
             ),
           ],
         ),

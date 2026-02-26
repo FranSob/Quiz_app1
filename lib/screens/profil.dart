@@ -29,35 +29,44 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _refreshSession() async {
     setState(() => _isLoading = true);
-    final user = await _authService.currentUser();
+    try {
+      final user = await _authService.currentUser();
+      if (!mounted) return;
 
-    if (!mounted) {
-      return;
+      // uzupełnij pola formularza jeśli mamy użytkownika
+      _nameController.text = user?.name ?? '';
+      _emailController.text = user?.email ?? '';
+
+      setState(() {
+        _currentUser = user;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _currentUser = null;
+          _isLoading = false;
+        });
+      }
+      _showMessage('Błąd podczas odświeżania sesji: ${e.toString()}');
     }
-
-    setState(() {
-      _currentUser = user;
-      _isLoading = false;
-    });
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isSubmitting = true);
 
     try {
       if (_isRegisterMode) {
         await _authService.register(
-          name: _nameController.text,
-          email: _emailController.text,
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
           password: _passwordController.text,
         );
       } else {
         await _authService.login(
-          email: _emailController.text,
+          email: _emailController.text.trim(),
           password: _passwordController.text,
         );
       }
@@ -66,18 +75,22 @@ class _ProfilePageState extends State<ProfilePage> {
       await _refreshSession();
     } on StateError catch (e) {
       _showMessage(e.message);
+    } catch (e) {
+      _showMessage('Błąd: ${e.toString()}');
     } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   Future<void> _logout() async {
-    await _authService.logout();
-    if (!mounted) {
-      return;
+    try {
+      await _authService.logout();
+    } catch (e) {
+      _showMessage('Błąd podczas wylogowywania: ${e.toString()}');
+      // kontynuujemy czyszczenie stanu mimo błędu
     }
+
+    if (!mounted) return;
 
     _showMessage('Wylogowano.');
     setState(() {
@@ -90,6 +103,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showMessage(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );
@@ -153,9 +167,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: Icons.person,
                 validator: (value) {
                   final trimmed = value?.trim() ?? '';
-                  if (trimmed.length < 3) {
-                    return 'Nazwa musi mieć min. 3 znaki';
-                  }
+                  if (trimmed.length < 3) return 'Nazwa musi mieć min. 3 znaki';
                   return null;
                 },
               ),
@@ -182,9 +194,7 @@ class _ProfilePageState extends State<ProfilePage> {
               obscureText: true,
               validator: (value) {
                 final raw = value ?? '';
-                if (raw.length < 6) {
-                  return 'Hasło musi mieć min. 6 znaków';
-                }
+                if (raw.length < 6) return 'Hasło musi mieć min. 6 znaków';
                 return null;
               },
             ),
@@ -219,9 +229,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         setState(() => _isRegisterMode = !_isRegisterMode);
                       },
                 child: Text(
-                  _isRegisterMode
-                      ? 'Masz konto? Zaloguj się'
-                      : 'Nie masz konta? Zarejestruj się',
+                  _isRegisterMode ? 'Masz konto? Zaloguj się' : 'Nie masz konta? Zarejestruj się',
                   style: const TextStyle(color: Colors.white70),
                 ),
               ),
@@ -234,7 +242,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileCard() {
     final user = _currentUser!;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -254,41 +261,19 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: const Color(0xFF6A5AE0),
-                    child: Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                      style: const TextStyle(color: Colors.white, fontSize: 24),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(user.email, style: const TextStyle(color: Colors.white70)),
-                      ],
-                    ),
-                  ),
-                ],
+              // bez avatara — tylko nazwa i e-mail
+              Text(
+                user.name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const Divider(height: 32, color: Colors.white24),
-              const Text(
-                'Data utworzenia konta',
-                style: TextStyle(color: Colors.white60),
-              ),
+              const SizedBox(height: 6),
+              Text(user.email, style: const TextStyle(color: Colors.white70)),
+              const SizedBox(height: 16),
+              const Text('Data utworzenia konta', style: TextStyle(color: Colors.white60)),
               const SizedBox(height: 6),
               Text(
                 '${user.createdAt.day.toString().padLeft(2, '0')}.${user.createdAt.month.toString().padLeft(2, '0')}.${user.createdAt.year}',
